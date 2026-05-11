@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Home Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:            #f0f2f7;
+  --surface:       #ffffff;
+  --border:        #e4e8f0;
+  --text-1:        #0d1426;
+  --text-2:        #5a6480;
+  --text-3:        #9ba5bc;
+  --safe:          #0dba6e;
+  --safe-bg:       #edfaf4;
+  --safe-border:   #b8edd5;
+  --warn:          #f59e0b;
+  --warn-bg:       #fffbeb;
+  --warn-border:   #fde68a;
+  --danger:        #ef4444;
+  --danger-bg:     #fff1f1;
+  --danger-border: #ffcccc;
+  --blue:          #3b82f6;
+  --font:          'Outfit', sans-serif;
+  --mono:          'JetBrains Mono', monospace;
+  --r:             16px;
+  --r-sm:          10px;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text-1);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 14px; }
+
+.logo-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset,
+              0 6px 16px rgba(59,130,246,0.38),
+              0 0 0 1px rgba(59,130,246,0.2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; position: relative; overflow: hidden;
+}
+.logo-icon::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
+  border-radius: 14px 14px 0 0;
+}
+.logo-icon svg { position: relative; z-index: 1; }
+
+.brand-text h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; line-height: 1.1; }
+.brand-text p  { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.conn-pill {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 40px;
+  font-size: 12px; font-weight: 600; color: var(--text-2);
+  transition: all 0.35s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.conn-pill.online  { border-color: var(--safe-border); color: var(--safe); background: var(--safe-bg); }
+.conn-pill.offline { border-color: var(--danger-border); color: var(--danger); background: var(--danger-bg); }
+.conn-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.conn-pill.online .conn-dot { animation: blink-dot 1.6s ease-in-out infinite; }
+@keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.mute-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 13px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 40px;
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  font-family: var(--font);
+}
+.mute-btn:hover { border-color: var(--text-3); color: var(--text-1); }
+.mute-btn.muted { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+.mute-btn .mute-icon { font-size: 13px; }
+
+/* ── Alert banner ───────────────────────────────────────── */
+.alert-bar {
+  display: none; align-items: center; gap: 14px;
+  padding: 14px 20px;
+  background: var(--danger-bg);
+  border: 1.5px solid var(--danger-border);
+  border-radius: var(--r);
+  margin-bottom: 24px;
+  animation: slide-down 0.3s ease;
+}
+.alert-bar.show { display: flex; }
+@keyframes slide-down { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+.alert-icon-wrap {
+  width: 36px; height: 36px;
+  background: linear-gradient(145deg, #b91c1c, #ef4444);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 4px 10px rgba(239,68,68,0.35);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 16px;
+  position: relative; overflow: hidden;
+}
+.alert-icon-wrap::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+}
+.alert-body { flex: 1; }
+.alert-title { font-size: 13px; font-weight: 700; color: var(--danger); }
+.alert-detail { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+/* ── Stat chips ─────────────────────────────────────────── */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-chip {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s;
+}
+.stat-chip:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.07); }
+
+.chip-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+  position: relative; overflow: hidden;
+}
+.chip-icon::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%);
+  border-radius: 10px 10px 0 0;
+}
+.chip-icon.blue   { background: linear-gradient(145deg,#1d4ed8,#3b82f6,#60a5fa); box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset, 0 4px 10px rgba(59,130,246,0.3); }
+.chip-icon.teal   { background: linear-gradient(145deg,#0d7a50,#10b981,#34d399); box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset, 0 4px 10px rgba(16,185,129,0.28); }
+.chip-icon.violet { background: linear-gradient(145deg,#5b21b6,#7c3aed,#a78bfa); box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset, 0 4px 10px rgba(124,58,237,0.28); }
+.chip-icon.slate  { background: linear-gradient(145deg,#334155,#475569,#64748b); box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 10px rgba(71,85,105,0.25); }
+
+.chip-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.8px; }
+.chip-val   { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text-1); margin-top: 2px; }
+
+/* ── Sensor Cards ───────────────────────────────────────── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+  transition: all 0.35s ease;
+  position: relative; overflow: hidden;
+  animation: card-in 0.45s ease both;
+}
+.card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+
+.card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: var(--border); transition: background 0.35s;
+}
+.card.status-safe::before    { background: var(--safe); }
+.card.status-warning::before { background: var(--warn); }
+.card.status-danger::before  { background: var(--danger); }
+
+.card.status-safe    { border-color: var(--safe-border); }
+.card.status-warning { border-color: var(--warn-border); }
+.card.status-danger  {
+  border-color: var(--danger-border);
+  animation: card-in 0.45s ease both, danger-throb 1.8s ease-in-out infinite;
+}
+@keyframes card-in    { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes danger-throb {
+  0%,100% { box-shadow: 0 0 0 3px rgba(239,68,68,0.06), 0 4px 20px rgba(239,68,68,0.08); }
+  50%     { box-shadow: 0 0 0 5px rgba(239,68,68,0.10), 0 4px 24px rgba(239,68,68,0.14); }
+}
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.12s; }
+
+.card-head {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 20px;
+}
+
+.sensor-icon {
+  width: 46px; height: 46px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+  position: relative; overflow: hidden;
+  transition: transform 0.3s ease;
+}
+.card:hover .sensor-icon { transform: scale(1.05); }
+.sensor-icon::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+  border-radius: 13px 13px 0 0; z-index: 1;
+}
+.sensor-icon span { position: relative; z-index: 2; }
+
+.sensor-icon.gas-icon {
+  background: linear-gradient(145deg,#1d4ed8 0%,#3b82f6 50%,#93c5fd 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset, 0 5px 14px rgba(59,130,246,0.35), 0 0 0 1px rgba(59,130,246,0.18);
+}
+.sensor-icon.flame-icon {
+  background: linear-gradient(145deg,#c2410c 0%,#f97316 55%,#fb923c 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset, 0 5px 14px rgba(249,115,22,0.38), 0 0 0 1px rgba(249,115,22,0.18);
+}
+.sensor-icon.flame-icon.active {
+  background: linear-gradient(145deg,#7f1d1d 0%,#ef4444 50%,#f87171 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset, 0 5px 18px rgba(239,68,68,0.55), 0 0 0 1px rgba(239,68,68,0.25);
+  animation: icon-pulse 1s ease-in-out infinite;
+}
+@keyframes icon-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+
+.card-meta {}
+.card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); }
+
+.card-status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 6px; padding: 3px 9px;
+  border-radius: 20px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  border: 1.5px solid; transition: all 0.35s;
+}
+.card-status-badge.safe    { color:var(--safe);   border-color:var(--safe-border);   background:var(--safe-bg); }
+.card-status-badge.warning { color:var(--warn);   border-color:var(--warn-border);   background:var(--warn-bg); }
+.card-status-badge.danger  { color:var(--danger); border-color:var(--danger-border); background:var(--danger-bg); }
+
+.card-value-row { margin-bottom: 16px; }
+.card-value {
+  font-family: var(--mono); font-size: 52px; font-weight: 600;
+  line-height: 1; letter-spacing: -1px;
+  color: var(--text-1); transition: color 0.35s;
+}
+.card-value .unit { font-size: 20px; font-weight: 400; color: var(--text-3); margin-left: 3px; }
+.card-sub { font-size: 12px; color: var(--text-3); font-family: var(--mono); margin-top: 5px; }
+
+.bool-val {
+  font-family: var(--mono); font-size: 32px; font-weight: 600;
+  color: var(--text-3); letter-spacing: -0.5px;
+  transition: color 0.35s; margin-bottom: 5px;
+}
+.bool-val.active { color: var(--text-1); }
+.bool-sub { font-size: 12px; color: var(--text-3); font-family: var(--mono); }
+
+.bar-wrap { margin-top: 8px; }
+.bar-labels {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: 9px; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bar-fill {
+  height: 100%; width: 0%; border-radius: 3px; background: var(--safe);
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1), background 0.4s;
+}
+
+/* ── Sparkline ──────────────────────────────────────────── */
+.spark-section {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.spark-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--text-3); margin-bottom: 12px;
+}
+.spark-svg { width: 100%; height: 56px; overflow: visible; }
+
+footer {
+  text-align: center; margin-top: 40px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text-3); letter-spacing: 0.5px;
+}
+
+/* ── Loading ────────────────────────────────────────────── */
+#loading {
+  position: fixed; inset: 0; background: var(--bg); z-index: 999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  transition: opacity 0.5s, visibility 0.5s;
+}
+#loading.gone { opacity: 0; visibility: hidden; }
+.spin-ring {
+  width: 40px; height: 40px;
+  border: 2.5px solid var(--border); border-top-color: var(--blue);
+  border-radius: 50%; animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.load-txt { font-family: var(--mono); font-size: 11px; color: var(--text-3); letter-spacing: 1px; }
+
+/* ── Toast System ───────────────────────────────────────── */
+#toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+  max-width: 340px; width: calc(100vw - 40px);
+}
+.toast {
+  display: flex; align-items: flex-start; gap: 13px;
+  padding: 15px 16px; border-radius: 14px;
+  pointer-events: all; position: relative; overflow: hidden;
+  animation: toast-in 0.38s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.toast.toast-out { animation: toast-out 0.28s ease forwards; }
+@keyframes toast-in  { from{opacity:0;transform:translateX(110%) scale(0.9)} to{opacity:1;transform:translateX(0) scale(1)} }
+@keyframes toast-out { from{opacity:1;transform:translateX(0) scale(1);max-height:120px} to{opacity:0;transform:translateX(110%) scale(0.9);max-height:0;padding:0;margin:0} }
+
+.toast::after {
+  content: ''; position: absolute; bottom:0; left:0; right:0; height:3px;
+  border-radius: 0 0 14px 14px;
+  transform-origin: left;
+  animation: drain var(--dur, 6s) linear forwards;
+}
+@keyframes drain { from{transform:scaleX(1)} to{transform:scaleX(0)} }
+
+.toast-flame {
+  background: linear-gradient(135deg, #c0152a 0%, #ef4444 100%);
+  border: 1px solid rgba(255,100,100,0.4);
+  box-shadow: 0 2px 0 rgba(255,255,255,0.15) inset, 0 12px 32px rgba(239,68,68,0.45);
+}
+.toast-flame::after { background: rgba(255,255,255,0.5); }
+
+.toast-icon {
+  width: 40px; height: 40px; border-radius: 11px;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; position: relative; overflow: hidden;
+}
+.toast-icon::before {
+  content: ''; position: absolute; top:0; left:0; right:0; height:50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+  border-radius: 11px 11px 0 0;
+}
+.toast-icon span { position: relative; z-index: 1; }
+.toast-flame .toast-icon {
+  background: linear-gradient(145deg,#7f1d1d,#dc2626,#f87171);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.toast-body { flex: 1; min-width: 0; }
+.toast-title { font-size: 13px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 3px; line-height: 1.2; }
+.toast-flame .toast-title { color: #fff; }
+.toast-msg  { font-size: 11px; font-family: var(--mono); opacity: 0.85; line-height: 1.4; }
+.toast-flame .toast-msg  { color: rgba(255,220,220,0.95); }
+.toast-time { font-size: 10px; font-family: var(--mono); opacity: 0.6; margin-top: 5px; }
+.toast-flame .toast-time { color: rgba(255,255,255,0.8); }
+
+/* ── Gas Warning toast (Amber) ── */
+.toast-gas-warn {
+  background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+  border: 1px solid rgba(251,191,36,0.45);
+  box-shadow: 0 2px 0 rgba(255,255,255,0.15) inset,
+              0 12px 32px rgba(245,158,11,0.4),
+              0 4px 12px rgba(245,158,11,0.25);
+}
+.toast-gas-warn::after { background: rgba(255,255,255,0.5); }
+.toast-gas-warn .toast-icon {
+  background: linear-gradient(145deg,#78350f,#d97706,#fbbf24);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 10px rgba(0,0,0,0.2);
+}
+.toast-gas-warn .toast-title { color: #fff; }
+.toast-gas-warn .toast-msg   { color: rgba(255,240,200,0.92); }
+.toast-gas-warn .toast-time  { color: rgba(255,255,255,0.75); }
+
+/* ── Gas Danger toast (Deep Orange-Red) ── */
+.toast-gas-danger {
+  background: linear-gradient(135deg, #7c2d12 0%, #ea580c 100%);
+  border: 1px solid rgba(251,146,60,0.45);
+  box-shadow: 0 2px 0 rgba(255,255,255,0.15) inset,
+              0 12px 32px rgba(234,88,12,0.45),
+              0 4px 12px rgba(234,88,12,0.3);
+}
+.toast-gas-danger::after { background: rgba(255,255,255,0.5); }
+.toast-gas-danger .toast-icon {
+  background: linear-gradient(145deg,#431407,#c2410c,#fb923c);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 10px rgba(0,0,0,0.22);
+}
+.toast-gas-danger .toast-title { color: #fff; }
+.toast-gas-danger .toast-msg   { color: rgba(255,220,190,0.92); }
+.toast-gas-danger .toast-time  { color: rgba(255,255,255,0.75); }
+
+.toast-close {
+  background: rgba(255,255,255,0.18); border: none; color: #fff;
+  width: 22px; height: 22px; border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0; transition: background 0.15s; line-height: 1;
+}
+.toast-close:hover { background: rgba(255,255,255,0.3); }
+
+@media (max-width: 600px) {
+  .cards-grid { grid-template-columns: 1fr; }
+  .card-value { font-size: 40px; }
+  header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spin-ring"></div>
+  <div class="load-txt">CONNECTING...</div>
+</div>
+
+<div class="page">
+
+  <header>
+    <div class="brand">
+      <div class="logo-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.5)" stroke-width="0.5"/>
+          <rect x="9" y="13" width="6" height="8" rx="1" fill="rgba(59,130,246,0.9)"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>Smart Home Monitor</h1>
+        <p>ESP32 · MQ-2 · Flame · Real-time</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="conn-pill" id="conn-pill">
+        <div class="conn-dot"></div>
+        <span id="conn-text">Connecting...</span>
+      </div>
+      <button class="mute-btn" id="mute-btn" onclick="toggleMute()">
+        <span class="mute-icon">🔔</span>
+        <span id="mute-label">Sound On</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="alert-bar" id="alert-bar">
+    <div class="alert-icon-wrap">⚠️</div>
+    <div class="alert-body">
+      <div class="alert-title">HAZARD DETECTED</div>
+      <div class="alert-detail" id="alert-detail">—</div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-chip">
+      <div class="chip-icon blue">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="position:relative;z-index:1">
+          <circle cx="12" cy="12" r="3" fill="white"/>
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M16.9 16.9l2.1 2.1M4.9 19.1l2.1-2.1M16.9 7.1l2.1-2.1" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="chip-text">
+        <div class="chip-label">ESP32 Device</div>
+        <div class="chip-val" id="chip-esp">—</div>
+      </div>
+    </div>
+    <div class="stat-chip">
+      <div class="chip-icon teal">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="position:relative;z-index:1">
+          <path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z" fill="rgba(255,255,255,0.85)"/>
+        </svg>
+      </div>
+      <div class="chip-text">
+        <div class="chip-label">Readings</div>
+        <div class="chip-val" id="chip-readings">0</div>
+      </div>
+    </div>
+    <div class="stat-chip">
+      <div class="chip-icon violet">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="position:relative;z-index:1">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="chip-text">
+        <div class="chip-label">Update Rate</div>
+        <div class="chip-val" id="chip-rate">—</div>
+      </div>
+    </div>
+    <div class="stat-chip">
+      <div class="chip-icon slate">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="position:relative;z-index:1">
+          <circle cx="12" cy="12" r="9" stroke="white" stroke-width="2"/>
+          <path d="M12 7v5l3 3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="chip-text">
+        <div class="chip-label">Last Update</div>
+        <div class="chip-val" id="chip-time">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+
+    <!-- Gas / MQ-2 -->
+    <div class="card" id="card-gas">
+      <div class="card-head">
+        <div class="sensor-icon gas-icon"><span>💨</span></div>
+        <div class="card-meta">
+          <div class="card-label">Gas / Smoke</div>
+          <div class="card-status-badge safe" id="badge-gas"><span>●</span> SAFE</div>
+        </div>
+      </div>
+      <div class="card-value-row">
+        <div class="card-value" id="val-gas">--<span class="unit">%</span></div>
+        <div class="card-sub" id="sub-gas">MQ-2 · RAW: —</div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-labels">
+          <span>Clean</span>
+          <span id="gas-pct-label">0%</span>
+          <span>Danger</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="gas-bar"></div></div>
+      </div>
+    </div>
+
+    <!-- Flame -->
+    <div class="card" id="card-flame">
+      <div class="card-head">
+        <div class="sensor-icon flame-icon" id="icon-flame"><span>🔥</span></div>
+        <div class="card-meta">
+          <div class="card-label">Flame Detection</div>
+          <div class="card-status-badge safe" id="badge-flame"><span>●</span> SAFE</div>
+        </div>
+      </div>
+      <div class="card-value-row">
+        <div class="bool-val" id="val-flame">NO FLAME</div>
+        <div class="bool-sub" id="sub-flame">Sensor reading clean</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="spark-section">
+    <div class="spark-label">Gas Level — Last 60 Readings</div>
+    <svg class="spark-svg" id="spark-gas" viewBox="0 0 600 56" preserveAspectRatio="none"></svg>
+  </div>
+
+  <footer>
+    SMART HOME MONITOR · ESP32-WROOM-32 · MQ-2 · FLAME · WEBSOCKET · <span id="footer-ts">—</span>
+  </footer>
+
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+/* ── State ─────────────────────────────────────────────── */
+let readingCount  = 0;
+let updateTimes   = [];
+let ws;
+let prevFlame     = null;
+let prevGasStatus = null;   // tracks 'SAFE' | 'WARNING' | 'DANGER'
+let isMuted       = false;
+let audioCtx      = null;
+// Flame alarm nodes
+let flameAlarmId  = null;
+let flameOsc1     = null;
+let flameOsc2     = null;
+let flameMaster   = null;
+// Gas danger alarm nodes
+let gasAlarmId    = null;
+let gasOsc1       = null;
+let gasOsc2       = null;
+let gasMaster     = null;
+
+/* ── AudioContext ───────────────────────────────────────── */
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+/* ── Flame Alarm — loud two-tone repeating burst ────────── */
+function startFlameAlarmLoop() {
+  if (flameAlarmId || isMuted) return;
+  const ctx = getAudioCtx();
+
+  flameMaster = ctx.createGain();
+  flameMaster.gain.value = 0;
+  flameMaster.connect(ctx.destination);
+
+  flameOsc1 = ctx.createOscillator();
+  flameOsc2 = ctx.createOscillator();
+  flameOsc1.type = 'sawtooth'; flameOsc1.frequency.value = 800;
+  flameOsc2.type = 'square';   flameOsc2.frequency.value = 970;
+
+  const g1 = ctx.createGain(); g1.gain.value = 0.55;
+  const g2 = ctx.createGain(); g2.gain.value = 0.35;
+  flameOsc1.connect(g1); g1.connect(flameMaster);
+  flameOsc2.connect(g2); g2.connect(flameMaster);
+  flameOsc1.start();
+  flameOsc2.start();
+
+  function scheduleWhoops() {
+    if (!flameMaster || isMuted) return;
+    const now = ctx.currentTime;
+    const g = flameMaster.gain;
+    g.cancelScheduledValues(now);
+    let t = now;
+    for (let i = 0; i < 4; i++) {
+      g.setValueAtTime(0, t);
+      g.linearRampToValueAtTime(0.7, t + 0.02);
+      g.setValueAtTime(0.7, t + 0.09);
+      g.linearRampToValueAtTime(0,   t + 0.11);
+      t += 0.16;
+    }
+    g.setValueAtTime(0, t);
+  }
+
+  scheduleWhoops();
+  flameAlarmId = setInterval(scheduleWhoops, 900);
+}
+
+function stopFlameAlarmLoop() {
+  if (flameAlarmId) { clearInterval(flameAlarmId); flameAlarmId = null; }
+  try {
+    if (flameMaster) flameMaster.gain.value = 0;
+    if (flameOsc1)   { flameOsc1.stop(); flameOsc1 = null; }
+    if (flameOsc2)   { flameOsc2.stop(); flameOsc2 = null; }
+    flameMaster = null;
+  } catch(e) {}
+}
+
+/* ── Gas Danger Alarm — lower two-tone pulse loop ───────── */
+// Distinct from flame: uses 520Hz/680Hz triangle waves,
+// slower 3-beep pattern so the two alarms sound different.
+function startGasAlarmLoop() {
+  if (gasAlarmId || isMuted) return;
+  const ctx = getAudioCtx();
+
+  gasMaster = ctx.createGain();
+  gasMaster.gain.value = 0;
+  gasMaster.connect(ctx.destination);
+
+  gasOsc1 = ctx.createOscillator();
+  gasOsc2 = ctx.createOscillator();
+  gasOsc1.type = 'triangle'; gasOsc1.frequency.value = 520;
+  gasOsc2.type = 'sine';     gasOsc2.frequency.value = 680;
+
+  const g1 = ctx.createGain(); g1.gain.value = 0.5;
+  const g2 = ctx.createGain(); g2.gain.value = 0.35;
+  gasOsc1.connect(g1); g1.connect(gasMaster);
+  gasOsc2.connect(g2); g2.connect(gasMaster);
+  gasOsc1.start();
+  gasOsc2.start();
+
+  function scheduleGasBeeps() {
+    if (!gasMaster || isMuted) return;
+    const now = ctx.currentTime;
+    const g = gasMaster.gain;
+    g.cancelScheduledValues(now);
+    let t = now;
+    // 3 beeps, slightly longer on/off than flame
+    for (let i = 0; i < 3; i++) {
+      g.setValueAtTime(0, t);
+      g.linearRampToValueAtTime(0.6, t + 0.03);
+      g.setValueAtTime(0.6, t + 0.14);
+      g.linearRampToValueAtTime(0,   t + 0.17);
+      t += 0.28;
+    }
+    g.setValueAtTime(0, t);
+  }
+
+  scheduleGasBeeps();
+  gasAlarmId = setInterval(scheduleGasBeeps, 1200);
+}
+
+function stopGasAlarmLoop() {
+  if (gasAlarmId) { clearInterval(gasAlarmId); gasAlarmId = null; }
+  try {
+    if (gasMaster) gasMaster.gain.value = 0;
+    if (gasOsc1)   { gasOsc1.stop(); gasOsc1 = null; }
+    if (gasOsc2)   { gasOsc2.stop(); gasOsc2 = null; }
+    gasMaster = null;
+  } catch(e) {}
+}
+
+/* ── Gas Warning Chime — single 3-note descending tone ──── */
+function playGasWarnChime() {
+  if (isMuted) return;
+  const ctx   = getAudioCtx();
+  const notes = [740, 587, 494]; // F5 → D5 → B4 — descending warn
+  notes.forEach((freq, i) => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const t = ctx.currentTime + i * 0.2;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+    osc.start(t);
+    osc.stop(t + 0.6);
+  });
+}
+
+/* ── Mute ───────────────────────────────────────────────── */
+function toggleMute() {
+  getAudioCtx();
+  isMuted = !isMuted;
+  const btn = document.getElementById('mute-btn');
+  btn.classList.toggle('muted', isMuted);
+  document.querySelector('#mute-btn .mute-icon').textContent = isMuted ? '🔕' : '🔔';
+  document.getElementById('mute-label').textContent = isMuted ? 'Muted' : 'Sound On';
+  if (isMuted) {
+    // Silence all running alarms immediately
+    if (flameMaster) {
+      flameMaster.gain.cancelScheduledValues(audioCtx.currentTime);
+      flameMaster.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+    }
+    if (gasMaster) {
+      gasMaster.gain.cancelScheduledValues(audioCtx.currentTime);
+      gasMaster.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.05);
+    }
+  } else {
+    // Unmuting — restart any active alarms
+    if (prevFlame === true)         { stopFlameAlarmLoop(); startFlameAlarmLoop(); }
+    if (prevGasStatus === 'DANGER') { stopGasAlarmLoop();   startGasAlarmLoop();   }
+  }
+}
+
+/* ── Toast ──────────────────────────────────────────────── */
+// type: 'flame' | 'gas-warn' | 'gas-danger'
+function showToast(type, title, message, duration) {
+  const icons = { 'flame': '🔥', 'gas-warn': '⚠️', 'gas-danger': '💨' };
+  const c     = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.style.setProperty('--dur', `${duration}ms`);
+  toast.innerHTML = `
+    <div class="toast-icon"><span>${icons[type] || '⚠️'}</span></div>
+    <div class="toast-body">
+      <div class="toast-title">${title}</div>
+      <div class="toast-msg">${message}</div>
+      <div class="toast-time">${new Date().toLocaleTimeString()}</div>
+    </div>
+    <button class="toast-close" onclick="dismissToast(this.parentElement)">✕</button>`;
+  c.appendChild(toast);
+  setTimeout(() => dismissToast(toast), duration);
+}
+
+function dismissToast(el) {
+  if (!el || !el.parentElement) return;
+  el.classList.add('toast-out');
+  setTimeout(() => el.remove(), 300);
+}
+
+/* ── WebSocket ──────────────────────────────────────────── */
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}`);
+  ws.onopen    = () => setConn('online',  'ESP32 Online');
+  ws.onmessage = e  => { try { render(JSON.parse(e.data)); } catch(x) {} };
+  ws.onclose   = () => { setConn('offline', 'Disconnected'); setTimeout(connect, 3000); };
+  ws.onerror   = () => ws.close();
+}
+
+/* ── Render ─────────────────────────────────────────────── */
+function render(d) {
+  document.getElementById('loading').classList.add('gone');
+  readingCount++;
+  document.getElementById('chip-readings').textContent = readingCount;
+
+  const now = Date.now();
+  updateTimes.push(now);
+  if (updateTimes.length > 6) updateTimes.shift();
+  if (updateTimes.length > 1) {
+    const avg = (updateTimes[updateTimes.length-1] - updateTimes[0]) / (updateTimes.length-1);
+    document.getElementById('chip-rate').textContent = `~${(avg/1000).toFixed(1)}s`;
+  }
+
+  const ts = new Date(d.timestamp);
+  document.getElementById('chip-time').textContent    = ts.toLocaleTimeString();
+  document.getElementById('footer-ts').textContent    = ts.toLocaleString();
+  document.getElementById('chip-esp').textContent     = d.connected ? 'Online' : 'Offline';
+  setConn(d.connected ? 'online' : 'offline', d.connected ? 'ESP32 Online' : 'Offline');
+
+  /* Gas */
+  document.getElementById('val-gas').innerHTML        = `${d.gasPct.toFixed(1)}<span class="unit">%</span>`;
+  document.getElementById('sub-gas').textContent      = `MQ-2 · RAW: ${d.gasRaw}  Δ: ${d.gasDelta ?? '—'}`;
+  document.getElementById('gas-pct-label').textContent= `${d.gasPct.toFixed(1)}%`;
+  const bar = document.getElementById('gas-bar');
+  bar.style.width      = Math.min(d.gasPct, 100) + '%';
+  bar.style.background = d.gasStatus === 'SAFE' ? 'var(--safe)' : d.gasStatus === 'WARNING' ? 'var(--warn)' : 'var(--danger)';
+  applyCard('card-gas', 'badge-gas', d.gasStatus);
+
+  /* Flame */
+  const flameIcon = document.getElementById('icon-flame');
+  const flameVal  = document.getElementById('val-flame');
+  flameIcon.classList.toggle('active', d.flame);
+  flameVal.textContent = d.flame ? 'DETECTED' : 'NO FLAME';
+  flameVal.classList.toggle('active', d.flame);
+  document.getElementById('sub-flame').textContent = d.flame ? 'Fire source detected!' : 'Sensor reading clean';
+  applyCard('card-flame', 'badge-flame', d.flame ? 'DANGER' : 'SAFE');
+
+  /* Alert banner */
+  const alerts = [];
+  if (d.flame)                  alerts.push('🔥 Flame detected');
+  if (d.gasStatus === 'DANGER') alerts.push('💨 Dangerous gas level');
+  if (d.gasStatus === 'WARNING') alerts.push('⚠ Elevated gas');
+  const hasDanger = d.flame || d.gasStatus === 'DANGER';
+  document.getElementById('alert-bar').classList.toggle('show', hasDanger);
+  document.getElementById('alert-detail').textContent = alerts.join('  ·  ');
+
+  /* ── Notifications — fire only on state change ─────────── */
+
+  // ── FLAME ──
+  if (d.flame && prevFlame === false) {
+    showToast('flame', '⚠ FIRE DETECTED', 'Flame sensor triggered — immediate action required', 8000);
+    startFlameAlarmLoop();
+  }
+  if (!d.flame && prevFlame === true) {
+    stopFlameAlarmLoop();
+    showToast('flame', 'Flame Cleared', 'Flame sensor no longer detecting a source', 4000);
+  }
+  if (prevFlame === null && d.flame) startFlameAlarmLoop();
+  prevFlame = d.flame;
+
+  // ── GAS ──
+  if (prevGasStatus !== null) {
+    // SAFE → WARNING
+    if (d.gasStatus === 'WARNING' && prevGasStatus === 'SAFE') {
+      showToast('gas-warn', '⚠ GAS LEVEL ELEVATED', 'MQ-2 detecting above-normal gas concentration', 6000);
+      playGasWarnChime();
+    }
+    // Any → DANGER (from SAFE or WARNING)
+    if (d.gasStatus === 'DANGER' && prevGasStatus !== 'DANGER') {
+      showToast('gas-danger', '🚨 DANGEROUS GAS LEVEL', 'Critical gas concentration — ventilate immediately', 9000);
+      stopGasAlarmLoop();
+      startGasAlarmLoop();
+    }
+    // DANGER → WARNING or SAFE: stop alarm
+    if (d.gasStatus !== 'DANGER' && prevGasStatus === 'DANGER') {
+      stopGasAlarmLoop();
+      showToast('gas-warn', 'Gas Level Dropping', `Now at ${d.gasPct.toFixed(1)}% — continue monitoring`, 5000);
+    }
+    // WARNING → SAFE
+    if (d.gasStatus === 'SAFE' && prevGasStatus === 'WARNING') {
+      showToast('gas-warn', 'Gas Level Normal', 'MQ-2 reading back within safe range', 4000);
+    }
+  } else {
+    // First reading — start gas alarm if already dangerous on load
+    if (d.gasStatus === 'DANGER') startGasAlarmLoop();
+  }
+  prevGasStatus = d.gasStatus;
+
+  /* Sparkline */
+  if (d.history && d.history.length > 1)
+    drawSpark('spark-gas', d.history.map(h => h.gasPct), '#3b82f6');
+}
+
+/* ── Helpers ────────────────────────────────────────────── */
+function applyCard(cardId, badgeId, status) {
+  const s     = (status || 'SAFE').toLowerCase();
+  const label = status === 'SAFE' ? 'SAFE' : status === 'WARNING' ? 'WARN' : 'DANGER';
+  document.getElementById(cardId).className  = `card status-${s}`;
+  const badge = document.getElementById(badgeId);
+  badge.className = `card-status-badge ${s}`;
+  badge.innerHTML = `<span>●</span> ${label}`;
+}
+
+function setConn(state, text) {
+  document.getElementById('conn-pill').className = `conn-pill ${state}`;
+  document.getElementById('conn-text').textContent = text;
+}
+
+function drawSpark(id, vals, color) {
+  const svg = document.getElementById(id);
+  if (!svg || vals.length < 2) return;
+  const W = 600, H = 56, pad = 2;
+  const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+  const xStep = (W - pad*2) / (vals.length - 1);
+  const pts   = vals.map((v, i) => [pad + i*xStep, H - pad - ((v-mn)/rng)*(H-pad*2)]);
+  const line  = pts.map(p => p.join(',')).join(' ');
+  const area  = `M${pts[0][0]},${H} ${pts.map(p=>`L${p[0]},${p[1]}`).join(' ')} L${pts[pts.length-1][0]},${H} Z`;
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="${color}" stop-opacity="0.2"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    <path d="${area}" fill="url(#sg)"/>
+    <polyline points="${line}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="3.5" fill="${color}"/>`;
+}
+
+/* ── Init ───────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('click', () => getAudioCtx(), { once: true });
+  fetch('/latest').then(r=>r.json()).then(d => { if (d.gasRaw || d.flame) render(d); }).catch(()=>{});
+  connect();
+  setTimeout(() => document.getElementById('loading').classList.add('gone'), 5000);
+});
+</script>
+</body>
+</html>

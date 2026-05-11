@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Smart Sorter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
+  <script src="https://unpkg.com/ml5@0.4.3/dist/ml5.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- 3D-style colored SVG icon library -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="g-mauve" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#e7c6ff"/><stop offset="100%" stop-color="#c8b6ff"/>
+      </linearGradient>
+      <linearGradient id="g-peri" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#bbd0ff"/><stop offset="100%" stop-color="#b8c0ff"/>
+      </linearGradient>
+      <linearGradient id="g-petal" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ffd6ff"/><stop offset="100%" stop-color="#e7c6ff"/>
+      </linearGradient>
+      <radialGradient id="r-shine" cx="0.3" cy="0.3" r="0.6">
+        <stop offset="0%" stop-color="white" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="white" stop-opacity="0"/>
+      </radialGradient>
+
+      <symbol id="i-spark" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r="26" fill="url(#g-mauve)"/>
+        <circle cx="32" cy="32" r="26" fill="url(#r-shine)"/>
+        <path d="M32 14 L36 28 L50 32 L36 36 L32 50 L28 36 L14 32 L28 28 Z" fill="white" opacity="0.85"/>
+      </symbol>
+      <symbol id="i-camera" viewBox="0 0 64 64">
+        <rect x="6" y="18" width="52" height="36" rx="8" fill="url(#g-peri)"/>
+        <rect x="6" y="18" width="52" height="36" rx="8" fill="url(#r-shine)"/>
+        <rect x="22" y="12" width="20" height="10" rx="3" fill="#9ab0e8"/>
+        <circle cx="32" cy="36" r="11" fill="#5a6bb8"/>
+        <circle cx="32" cy="36" r="7" fill="#bbd0ff"/>
+        <circle cx="29" cy="33" r="2.5" fill="white" opacity="0.9"/>
+      </symbol>
+      <symbol id="i-chip" viewBox="0 0 64 64">
+        <rect x="12" y="12" width="40" height="40" rx="6" fill="url(#g-mauve)"/>
+        <rect x="12" y="12" width="40" height="40" rx="6" fill="url(#r-shine)"/>
+        <rect x="20" y="20" width="24" height="24" rx="3" fill="#a890d8"/>
+        <rect x="25" y="25" width="14" height="14" rx="2" fill="#e7c6ff"/>
+        <g fill="#a890d8">
+          <rect x="6" y="20" width="6" height="3" rx="1"/><rect x="6" y="28" width="6" height="3" rx="1"/><rect x="6" y="36" width="6" height="3" rx="1"/>
+          <rect x="52" y="20" width="6" height="3" rx="1"/><rect x="52" y="28" width="6" height="3" rx="1"/><rect x="52" y="36" width="6" height="3" rx="1"/>
+          <rect x="20" y="6" width="3" height="6" rx="1"/><rect x="28" y="6" width="3" height="6" rx="1"/><rect x="36" y="6" width="3" height="6" rx="1"/>
+          <rect x="20" y="52" width="3" height="6" rx="1"/><rect x="28" y="52" width="3" height="6" rx="1"/><rect x="36" y="52" width="3" height="6" rx="1"/>
+        </g>
+      </symbol>
+      <symbol id="i-list" viewBox="0 0 64 64">
+        <rect x="10" y="8" width="44" height="48" rx="6" fill="url(#g-petal)"/>
+        <rect x="10" y="8" width="44" height="48" rx="6" fill="url(#r-shine)"/>
+        <g fill="#c490c8" opacity="0.8">
+          <circle cx="20" cy="22" r="2.5"/><rect x="26" y="20" width="22" height="4" rx="2"/>
+          <circle cx="20" cy="32" r="2.5"/><rect x="26" y="30" width="22" height="4" rx="2"/>
+          <circle cx="20" cy="42" r="2.5"/><rect x="26" y="40" width="16" height="4" rx="2"/>
+        </g>
+      </symbol>
+      <symbol id="i-plug" viewBox="0 0 64 64">
+        <path d="M22 8 v14 h20 v-14" stroke="#8a99d8" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <rect x="14" y="22" width="36" height="22" rx="4" fill="url(#g-peri)"/>
+        <rect x="14" y="22" width="36" height="22" rx="4" fill="url(#r-shine)"/>
+        <rect x="28" y="44" width="8" height="14" rx="2" fill="#8a99d8"/>
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r="26" fill="url(#g-mauve)"/>
+        <circle cx="32" cy="32" r="26" fill="url(#r-shine)"/>
+        <path d="M32 16 v22 M22 30 L32 40 L42 30" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="20" y="44" width="24" height="4" rx="2" fill="white"/>
+      </symbol>
+      <symbol id="i-bell" viewBox="0 0 64 64">
+        <path d="M32 8 C20 8 16 18 16 28 v10 l-4 6 h40 l-4 -6 v-10 c0 -10 -4 -20 -16 -20 z" fill="url(#g-petal)"/>
+        <path d="M32 8 C20 8 16 18 16 28 v10 l-4 6 h40 l-4 -6 v-10 c0 -10 -4 -20 -16 -20 z" fill="url(#r-shine)"/>
+        <circle cx="32" cy="52" r="4" fill="#c490c8"/>
+      </symbol>
+      <symbol id="i-button" viewBox="0 0 64 64">
+        <ellipse cx="32" cy="42" rx="22" ry="6" fill="#a890d8" opacity="0.4"/>
+        <rect x="10" y="30" width="44" height="14" rx="6" fill="#a890d8"/>
+        <ellipse cx="32" cy="30" rx="22" ry="8" fill="url(#g-petal)"/>
+        <ellipse cx="32" cy="28" rx="18" ry="6" fill="url(#g-mauve)"/>
+        <ellipse cx="28" cy="26" rx="6" ry="2" fill="white" opacity="0.7"/>
+      </symbol>
+    </defs>
+  </svg>
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-icon" width="36" height="36"><use href="#i-spark"/></svg>
+        <div>
+          <h1>Smart Sorter</h1>
+          <span class="tag">a tiny AI helper</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="connect" class="btn btn-soft">
+          <svg width="20" height="20"><use href="#i-plug"/></svg>
+          <span>Connect Arduino</span>
+        </button>
+        <div id="armBadge" class="arm-badge idle">
+          <svg width="22" height="22"><use href="#i-button"/></svg>
+          <div>
+            <small>Arduino</small>
+            <strong id="armLabel">IDLE</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hint banner -->
+    <div id="hint" class="hint">
+      <svg width="20" height="20"><use href="#i-button"/></svg>
+      <span>Connect Arduino, then press the <strong>physical button</strong> on your board to arm the sorter.</span>
+    </div>
+
+    <!-- Main grid -->
+    <main class="layout">
+      <!-- LEFT: Camera & Classification -->
+      <section class="panel camera-panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="22" height="22"><use href="#i-camera"/></svg>
+            <h2>Live Camera</h2>
+          </div>
+          <span id="status" class="status-pill">starting</span>
+        </div>
+        <div id="videoBox"></div>
+        <div class="confidence-row">
+          <div class="conf-block">
+            <span id="label1" class="conf-label">class1</span>
+            <div class="bar"><div id="bar1" class="fill green"></div></div>
+            <span id="pct1" class="pct">0%</span>
+          </div>
+          <div class="conf-block">
+            <span id="label2" class="conf-label">class2</span>
+            <div class="bar"><div id="bar2" class="fill rose"></div></div>
+            <span id="pct2" class="pct">0%</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Hardware visualization -->
+      <section class="panel hardware-panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="22" height="22"><use href="#i-chip"/></svg>
+            <h2>Hardware</h2>
+          </div>
+          <span class="last-det-mini">last <strong id="lastDet">—</strong></span>
+        </div>
+
+        <div class="hw-row">
+          <div class="hw-card">
+            <div id="ledGreen" class="led led-green"></div>
+            <span>Green LED</span>
+          </div>
+          <div class="hw-card">
+            <div id="ledRed" class="led led-red"></div>
+            <span>Red LED</span>
+          </div>
+          <div class="hw-card">
+            <div id="buzzer" class="buzzer">
+              <div class="wave w1"></div><div class="wave w2"></div><div class="wave w3"></div>
+              <svg width="28" height="28"><use href="#i-bell"/></svg>
+            </div>
+            <span>Buzzer</span>
+          </div>
+          <div class="hw-card">
+            <div id="btnIcon" class="btn-icon">
+              <svg width="36" height="36"><use href="#i-button"/></svg>
+            </div>
+            <span>Arm Button</span>
+          </div>
+        </div>
+
+        <!-- Servo gauge -->
+        <div class="servo-wrap">
+          <h3>Servo Position</h3>
+          <div class="servo-gauge">
+            <div id="servoArm" class="arm"></div>
+            <div class="pivot"></div>
+            <div class="tick t-left">A · 30°</div>
+            <div class="tick t-mid">home</div>
+            <div class="tick t-right">B · 150°</div>
+          </div>
+          <div id="angleText" class="angle">90°</div>
+        </div>
+      </section>
+
+      <!-- BOTTOM: Data log -->
+      <section class="panel log-panel">
+        <div class="panel-head">
+          <div class="panel-title">
+            <svg width="22" height="22"><use href="#i-list"/></svg>
+            <h2>Data Log</h2>
+          </div>
+          <div class="log-actions">
+            <button id="downloadBtn" class="btn btn-soft btn-sm">
+              <svg width="18" height="18"><use href="#i-download"/></svg>
+              <span>Download CSV</span>
+            </button>
+            <button id="clearBtn" class="btn btn-ghost btn-sm">Clear</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="logTable">
+            <thead>
+              <tr><th>#</th><th>Time</th><th>Class</th><th>Confidence</th><th>Action</th></tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+          </table>
+          <p class="empty-hint">Detections will appear here…</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">smart sorter · made with care</footer>
+  </div>
+
+  <script src="serial.js"></script>
+  <script src="sketch.js"></script>
+</body>
+</html>
